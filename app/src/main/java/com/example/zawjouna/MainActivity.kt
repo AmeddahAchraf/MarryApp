@@ -4,6 +4,7 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -17,18 +18,24 @@ import android.support.v4.app.NotificationManagerCompat
 import android.view.View
 import android.widget.Toast
 import com.example.zawjouna.R
+import com.example.zawjouna.Zwadj
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
 
+    companion object {
+        val ACTION_ZWADJ = "com.example.zawjouna.Zwadj"
+    }
+
     var bmp: Bitmap? = null
+    private lateinit var notificationManager : NotificationManagerCompat
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         imageView.setOnClickListener(loadPersonnalPhoto)
-
+        notificationManager = NotificationManagerCompat.from(this)
         btn_add.setOnClickListener({
             notif();
         })
@@ -36,24 +43,50 @@ class MainActivity : AppCompatActivity() {
 
 
     fun notif() {
-        val notificationManager =
-            this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            val mChannel = NotificationChannel("1", "notif", NotificationManager.IMPORTANCE_HIGH)
-            notificationManager.createNotificationChannel(mChannel)
-            val pendingIntent: PendingIntent = PendingIntent.getActivity(this, 0, intent, 0)
 
-            val noti = Notification.Builder(this, "1")
-                .setSmallIcon(R.drawable.ic_launcher_background)
-                .setContentTitle(txt_name.text)
-                .setContentText(txt_bibio.text)
-                .setLargeIcon(bmp)
-                .addAction(R.drawable.ic_launcher_background, "Intéressé", pendingIntent)
-                .addAction(R.drawable.ic_launcher_background, "non Intéressé", pendingIntent)
-                .build()
+        val interestedIntent = Intent()
+        interestedIntent.setComponent(ComponentName("com.example.exercice2avanc","com.example.exercice2avanc.ZwadjReciever"))
+        interestedIntent.setAction(ACTION_ZWADJ)
+        interestedIntent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
+//        this.sendBroadcast(interestedIntent)
 
-            notificationManager.notify(0, noti)
-        }
+        interestedIntent.putExtra("actionInterested","Intersse")
+        val interestedPendingIntent: PendingIntent = PendingIntent.getBroadcast(this,0,interestedIntent,PendingIntent.FLAG_UPDATE_CURRENT)
+
+        val notInterestedIntent = Intent()
+        notInterestedIntent.putExtra("actionNotInterested","NOT")
+        notInterestedIntent.setComponent(ComponentName("com.example.exercice2avanc","com.example.exercice2avanc.ZwadjReciever"))
+        notInterestedIntent.setAction(ACTION_ZWADJ)
+        notInterestedIntent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
+//        this.sendBroadcast(notInterestedIntent)
+        val notInterestedPendingIntent: PendingIntent = PendingIntent.getBroadcast(this,1,notInterestedIntent,PendingIntent.FLAG_UPDATE_CURRENT)
+
+
+        val notification = NotificationCompat.Builder(this, Zwadj.NOTIFICATION_CHANEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_background)
+            .setContentTitle(txt_name.text)
+            .setContentText(txt_bibio.text)
+            .setLargeIcon(bmp)
+            .setAutoCancel(true)
+            .addAction(R.mipmap.ic_launcher,"Interesse",interestedPendingIntent)
+            .addAction(R.mipmap.ic_launcher,"Non interesse",notInterestedPendingIntent)
+            .build()
+
+
+
+
+//            val noti = Notification.Builder(this, "1")
+//                .setSmallIcon(R.drawable.ic_launcher_background)
+//                .setContentTitle(txt_name.text)
+//                .setContentText(txt_bibio.text)
+//                .setLargeIcon(bmp)
+//                .setContentIntent(pendingIntent)
+//                .addAction(R.drawable.ic_launcher_background, "Intéressé", pendingIntent)
+//                .addAction(R.drawable.ic_launcher_background, "non Intéressé", pendingIntent)
+//                .build()
+
+            notificationManager.notify(0, notification)
+
 
     }
 
